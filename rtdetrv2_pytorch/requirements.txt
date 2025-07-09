@@ -8,3 +8,8 @@ pycocotools
 onnx
 onnxruntime-gpu
 tensorrt==8.5.2.2
+
+################# Shahar Additional Packages #################
+wandb
+torchinfo
+################# Shahar Additional Packages #################

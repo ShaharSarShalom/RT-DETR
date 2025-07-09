@@ -258,6 +258,13 @@ def main_from_folder(args, ):
             output = model(im_data, orig_size)
             labels, boxes, scores = output
 
+<<<<<<< HEAD
+=======
+        from torchinfo import summary
+        summary(model, input_size=(1, 3, 224, 224))
+
+
+>>>>>>> 71f6890 (CONTINUE TO MULTI HEAD DNN)
         # Save result image with detections
         # Ensure output directory exists
         output_dir = '/dataset/temp_output'

@@ -74,6 +74,11 @@ class BaseSolver(object):
             shuffle=self.cfg.train_dataloader.shuffle)
         self.val_dataloader = dist_utils.warp_loader(self.cfg.val_dataloader, \
             shuffle=self.cfg.val_dataloader.shuffle)
+        
+        ############ Shahar start
+        print(f"Train dataloader batches: {len(self.train_dataloader)}")
+        print(f"Val dataloader batches: {len(self.val_dataloader)}")
+        ################################# Shahar end
 
         self.evaluator = self.cfg.evaluator
 

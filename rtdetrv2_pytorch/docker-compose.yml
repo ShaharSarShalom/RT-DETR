@@ -8,8 +8,17 @@ services:
     image: rtdetr-v2:23.01
     volumes:
       - ./:/workspace
-    runtime: nvidia
+      - /media/user/drive8tb/flir_dataset/FLIR_ADAS_v2/:/dataset
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+      - WANDB_API_KEY:333c53729f4040c1fa184caff1628433d3b5e69a
     stdin_open: true
     tty: true
+    ipc: host

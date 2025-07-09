@@ -11,10 +11,119 @@ from ..misc import dist_utils, profiler_utils
 
 from ._solver import BaseSolver
 from .det_engine import train_one_epoch, evaluate
+################ Shahar changes 
+import wandb
 
+import wandb
+import numpy as np
+from ..data.dataset.coco_eval import CocoEvaluator
+
+def log_coco_metrics_to_wandb(coco_evaluator: CocoEvaluator, epoch: int, prefix: str = "val"):
+    """
+    Extract COCO evaluation metrics and log them to wandb
+    
+    Args:
+        coco_evaluator: CocoEvaluator instance after evaluation
+        epoch: Current epoch number
+        prefix: Prefix for metric names (e.g., 'val', 'test')
+    """
+    metrics = {}
+    
+    for iou_type, coco_eval in coco_evaluator.coco_eval.items():
+        # Get the stats from COCOeval
+        stats = coco_eval.stats
+        
+        if iou_type == "bbox":
+            # COCO detection metrics
+            metrics.update({
+                f"{prefix}/mAP": stats[0],              # AP @ IoU=0.50:0.95
+                f"{prefix}/mAP_50": stats[1],           # AP @ IoU=0.50
+                f"{prefix}/mAP_75": stats[2],           # AP @ IoU=0.75
+                f"{prefix}/mAP_small": stats[3],        # AP @ IoU=0.50:0.95 (small)
+                f"{prefix}/mAP_medium": stats[4],       # AP @ IoU=0.50:0.95 (medium)
+                f"{prefix}/mAP_large": stats[5],        # AP @ IoU=0.50:0.95 (large)
+                f"{prefix}/AR_1": stats[6],             # AR @ IoU=0.50:0.95 (max 1 det)
+                f"{prefix}/AR_10": stats[7],            # AR @ IoU=0.50:0.95 (max 10 det)
+                f"{prefix}/AR_100": stats[8],           # AR @ IoU=0.50:0.95 (max 100 det)
+                f"{prefix}/AR_small": stats[9],         # AR @ IoU=0.50:0.95 (small)
+                f"{prefix}/AR_medium": stats[10],       # AR @ IoU=0.50:0.95 (medium)
+                f"{prefix}/AR_large": stats[11],        # AR @ IoU=0.50:0.95 (large)
+            })
+        
+        elif iou_type == "segm":
+            # Instance segmentation metrics
+            metrics.update({
+                f"{prefix}/segm_mAP": stats[0],
+                f"{prefix}/segm_mAP_50": stats[1],
+                f"{prefix}/segm_mAP_75": stats[2],
+                f"{prefix}/segm_AR_100": stats[8],
+            })
+        
+        elif iou_type == "keypoints":
+            # Keypoint detection metrics
+            metrics.update({
+                f"{prefix}/kp_mAP": stats[0],
+                f"{prefix}/kp_mAP_50": stats[1],
+                f"{prefix}/kp_mAP_75": stats[2],
+                f"{prefix}/kp_AR_100": stats[8],
+            })
+    
+    # Log all metrics to wandb
+    wandb.log(metrics, step=epoch)
+    
+    return metrics
+
+def log_coco_summary_to_wandb(coco_evaluator: CocoEvaluator, epoch: int):
+    """
+    Log a comprehensive summary of COCO evaluation results to wandb
+    """
+    summary_text = []
+    
+    for iou_type, coco_eval in coco_evaluator.coco_eval.items():
+        summary_text.append(f"\n=== {iou_type.upper()} Evaluation ===")
+        
+        # Capture the summary output
+        import io
+        import contextlib
+        
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            coco_eval.summarize()
+        summary_output = f.getvalue()
+        
+        summary_text.append(summary_output)
+    
+    # Log as text to wandb
+    wandb.log({"coco_evaluation_summary": "\n".join(summary_text)}, step=epoch)
+################ Shahar changes 
 
 class DetSolver(BaseSolver):
     
+    ################ Shaahr changes 
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.cfg = cfg
+        
+        self.wandb_run = None
+        self.output_dir = None
+        
+        # cfg.use_wandb
+        if getattr(self.cfg, "use_wandb", True):
+            self.wandb_run = wandb.init(
+                project=getattr(self.cfg, "wandb_project", "rtdetr_experiments"),
+                name=getattr(self.cfg, "wandb_run_name", None),
+                tags=["rtdetrv2", "detection"],
+                config=self.cfg.__dict__,
+                dir=str(self.output_dir) if self.output_dir else None,
+                resume="allow"
+            )
+
+    def _wandb_log(self, log_stats, step=None):
+        if self.wandb_run is not None:
+            wandb.log(log_stats, step=step)
+    ################ Shaahr changes 
+    
+    # In fit(), after log_stats is created and before writing to log.txt, add:
     def fit(self, ):
         print("Start training")
         self.train()
@@ -49,7 +158,7 @@ class DetSolver(BaseSolver):
                 lr_warmup_scheduler=self.lr_warmup_scheduler,
                 writer=self.writer
             )
-
+            
             if self.lr_warmup_scheduler is None or self.lr_warmup_scheduler.finished():
                 self.lr_scheduler.step()
             
@@ -72,7 +181,16 @@ class DetSolver(BaseSolver):
                 self.evaluator, 
                 self.device
             )
-
+            
+            ################ Shaahr changes 
+            # Log all train_stats values to wandb under "train/" namespace
+            if self.wandb_run is not None:
+                wandb_log_dict = {f"train/{k}": v for k, v in train_stats.items()}
+                self.wandb_run.log(wandb_log_dict, step=epoch)
+            
+            log_coco_metrics_to_wandb(coco_evaluator, epoch=epoch, prefix="val")
+            ################ Shaahr changes 
+            
             # TODO 
             for k in test_stats:
                 if self.writer and dist_utils.is_main_process():

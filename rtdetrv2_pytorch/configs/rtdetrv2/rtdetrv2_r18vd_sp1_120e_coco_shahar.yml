@@ -7,9 +7,11 @@ __include__: [
 ]
 
 
-num_classes: 13
+num_classes: 80
+# num_classes: 2
 
-output_dir: ./output/rtdetrv2_r18vd_sp1_120e_coco_shahar
+# output_dir: ./output/rtdetrv2_r18vd_sp1_120e_coco_shahar
+output_dir: /workspace/output/rtdetrv2_r18vd_sp1_120e_coco_shahar
 
 
 PResNet:

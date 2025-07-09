@@ -1,0 +1,63 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "infer RTDETRv2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/infer.py",
+            "console": "integratedTerminal",
+            "env": {
+            "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--config",
+                "configs/rtdetrv2/rtdetrv2_r50vd_6x_coco_flir_rgb.yml",
+                "--resume",
+                "output/rtdetrv2_r50vd_6x_coco_flir_ir/best.pth",
+                "-f",
+                "/dataset/images_thermal_val/data/video-zp8ed5vPKfAJ2fKWh-frame-006314-sBhdNtnTDtYk4afK5.jpg"
+            ]
+        },
+
+        {
+            "name": "train RTDETRv2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/train.py",
+            "console": "integratedTerminal",
+            "env": {
+            "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "-c",
+                "configs/rtdetrv2/rtdetrv2_r18vd_sp1_120e_coco_shahar.yml"
+            ]
+        },
+
+        {
+            "name": "train RTDETRv2 flir ir",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/train.py",
+            "console": "integratedTerminal",
+            "env": {
+            "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "-c",
+                "configs/rtdetrv2/rtdetrv2_r50vd_6x_coco_flir_ir.yml"
+            ]
+        }
+    ]
+}
